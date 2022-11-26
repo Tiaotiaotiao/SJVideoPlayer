@@ -37,4 +37,6 @@ extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Definition;
 // center adapter items
 extern SJEdgeControlButtonItemTag const SJEdgeControlLayerCenterItem_Replay;        // 重播按钮
 
+extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Speed;        // 倍速
+
 NS_ASSUME_NONNULL_END

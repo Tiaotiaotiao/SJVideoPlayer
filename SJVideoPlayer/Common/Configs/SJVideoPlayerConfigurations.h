@@ -7,11 +7,15 @@
 //
 
 #import <Foundation/Foundation.h>
+#import <UIKit/UIKit.h>
 #import "SJVideoPlayerLocalizedStringKeys.h"
 @class UIImage, UIColor, UIFont, SJVideoPlayerConfigurations;
 @protocol SJVideoPlayerControlLayerResources, SJVideoPlayerLocalizedStrings;
 
 NS_ASSUME_NONNULL_BEGIN
+
+#define HokRate(a) a * MIN([UIScreen mainScreen].bounds.size.width, [UIScreen mainScreen].bounds.size.height) / 375
+
 UIKIT_EXTERN NSNotificationName const SJVideoPlayerConfigurationsDidUpdateNotification;
 
 @interface SJVideoPlayerConfigurations : NSObject

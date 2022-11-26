@@ -39,6 +39,9 @@
 #import "SJSpeedupPlaybackPopupView.h"
 #import "SJEdgeControlButtonItemInternal.h"
 #import <objc/message.h>
+#import "SJVideoPlayerResourceLoader.h"
+
+#import "HokSpeedSettingControlLayer.h"
 
 #pragma mark - Top
 
@@ -56,7 +59,16 @@
 @property (nonatomic, strong, readonly) SJTimerControl *dateTimerControl API_AVAILABLE(ios(11.0)); // refresh date for custom status bar
 @property (nonatomic, strong, readonly) SJEdgeControlButtonItem *pictureInPictureItem API_AVAILABLE(ios(14.0));
 
-@property (nonatomic) BOOL automaticallyFitOnScreen;
+@property (nonatomic) BOOL autousesFitOnScreen;
+
+// Hok Add
+@property (nonatomic, strong) UIButton *speedBtn;
+@property (nonatomic, weak) HokSpeedSettingControlLayer *speedSettingLayer;
+
+@property (nonatomic, strong) UIButton *playBigBtn;
+
+@property (nonatomic, strong) UIButton *closeBtn;
+
 @end
 
 @implementation SJEdgeControlLayer
@@ -134,7 +146,7 @@
 }
 
 - (void)_fullItemWasTapped {
-    if ( _videoPlayer.onlyFitOnScreen || _automaticallyFitOnScreen ) {
+    if ( _videoPlayer.onlyFitOnScreen || _autousesFitOnScreen ) {
         [_videoPlayer setFitOnScreen:!_videoPlayer.isFitOnScreen];
         return;
     }
@@ -162,6 +174,52 @@
         case SJPictureInPictureStatusStopped:
             [_videoPlayer.playbackController startPictureInPicture];
             break;
+    }
+}
+
+- (void)showSpeedSelectAction:(UIButton *)button {
+    if (self.speedClickBlock) {
+        if (self.delegate && [self.delegate respondsToSelector:@selector(keepControllerLayer:)]) {
+            [self.delegate keepControllerLayer:YES];
+        }
+        
+        self.speedClickBlock(self.speedStr);
+        
+        return;
+    }
+    
+    if (self.speedSettingLayer) {
+        [self.speedSettingLayer hide];
+        return;
+    }
+    
+    HokSpeedSettingControlLayer *view = [[HokSpeedSettingControlLayer alloc] initWithFrame:CGRectZero];
+    view.selSpeed = self.speedBtn.titleLabel.text;
+    self.speedSettingLayer = view;
+
+    CGRect rect = [button convertRect:button.bounds toView:self];
+    view.frame = CGRectMake(rect.origin.x, rect.origin.y - HokRate(4), HokRate(46), 0);
+    [view show:self];
+    
+    __weak typeof(self) weakSelf = self;
+    view.selBlock = ^(NSString * _Nonnull speed) {
+        weakSelf.speedStr = speed;
+    };
+    
+    view.hideBlock = ^ {
+        if (weakSelf.delegate && [self.delegate respondsToSelector:@selector(keepControllerLayer:)]) {
+            [weakSelf.delegate keepControllerLayer:NO];
+        }
+    };
+    
+    if (self.delegate && [self.delegate respondsToSelector:@selector(keepControllerLayer:)]) {
+        [self.delegate keepControllerLayer:YES];
+    }
+}
+
+- (void)closeClickAction:(UIButton *)button {
+    if (self.closeBlock) {
+        self.closeBlock();
     }
 }
 
@@ -246,13 +304,17 @@
     if ( videoPlayer.isLockedScreen )
         return;
     
+    if (self.speedSettingLayer) {
+        [self.speedSettingLayer hide];
+    }
+    
     [self _updateAppearStateForFixedBackButtonIfNeeded];
     [self _updateAppearStateForContainerViews];
     [self _updateAppearStateForBottomProgressIndicatorIfNeeded];
 }
 
 - (void)videoPlayer:(__kindof SJBaseVideoPlayer *)videoPlayer prepareToPlay:(SJVideoPlayerURLAsset *)asset {
-    _automaticallyFitOnScreen = NO;
+    _autousesFitOnScreen = NO;
     [self _reloadSizeForBottomTimeLabel];
     [self _updateContentForBottomDurationItemIfNeeded];
     [self _updateContentForBottomCurrentTimeItemIfNeeded];
@@ -327,13 +389,8 @@
 }
 
 - (BOOL)canTriggerRotationOfVideoPlayer:(__kindof SJBaseVideoPlayer *)videoPlayer {
-    if ( _needsFitOnScreenFirst || _automaticallyFitOnScreen )
+    if ( _needsFitOnScreenFirst || _autousesFitOnScreen )
         return videoPlayer.isFitOnScreen;
-    
-    if ( _automaticallyFitOnScreen ) {
-        if ( videoPlayer.isFitOnScreen ) return videoPlayer.allowsRotationInFitOnScreen;
-        return NO;
-    }
     
     return YES;
 }
@@ -436,7 +493,7 @@
 
 - (void)videoPlayer:(__kindof SJBaseVideoPlayer *)videoPlayer presentationSizeDidChange:(CGSize)size {
     if ( _automaticallyPerformRotationOrFitOnScreen && !videoPlayer.isFullscreen && !videoPlayer.isFitOnScreen ) {
-        _automaticallyFitOnScreen = size.width < size.height;
+        _autousesFitOnScreen = size.width < size.height;
     }
 }
 
@@ -606,6 +663,61 @@
     }
 }
 
+// Hok Add
+
+- (void)setHideBottomPlay:(BOOL)hideBottomPlay {
+    _hideBottomPlay = hideBottomPlay;
+//    SJEdgeControlButtonItem *fullItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_Full];
+//    fullItem.hidden = YES;
+    if (hideBottomPlay) {
+        [self.bottomAdapter removeItemForTag:SJEdgeControlLayerBottomItem_Play];
+        [self.bottomAdapter reload];
+    }
+}
+
+- (void)setHideFull:(BOOL)hideFull {
+    _hideFull = hideFull;
+//    SJEdgeControlButtonItem *fullItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_Full];
+//    fullItem.hidden = YES;
+    if (hideFull) {
+        [self.bottomAdapter removeItemForTag:SJEdgeControlLayerBottomItem_Full];
+        [self.bottomAdapter reload];
+    }
+}
+- (void)setShowClose:(BOOL)showClose {
+    _showClose = showClose;
+    
+    if (showClose) {
+        if (!self.closeBtn) {
+            _closeBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+            [_closeBtn setImage:[SJVideoPlayerResourceLoader imageNamed:@"hok_close_icon"] forState:UIControlStateNormal];
+            [_closeBtn addTarget:self action:@selector(closeClickAction:) forControlEvents:UIControlEventTouchUpInside];
+        }
+        
+        if (![self.closeBtn superview]) {
+            [self addSubview:self.closeBtn];
+            [self.closeBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.right.top.mas_equalTo(0);
+                make.width.height.mas_equalTo(44);
+            }];
+        }
+    }
+}
+
+- (void)showHokUI {
+    [self.bottomAdapter removeItemForTag:SJEdgeControlLayerBottomItem_Separator];
+
+    [self.bottomAdapter exchangeItemForTag:SJEdgeControlLayerBottomItem_DurationTime withItemForTag:SJEdgeControlLayerBottomItem_Progress];
+    
+    [self.bottomAdapter reload];
+}
+
+- (void)hideBottom {
+    if (self.delegate && [self.delegate respondsToSelector:@selector(keepControllerLayer:)]) {
+        [self.delegate keepControllerLayer:NO];
+    }
+}
+
 #pragma mark - setup view
 
 - (void)_setupView {
@@ -635,6 +747,7 @@
     _fixedBackButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [_fixedBackButton setImage:SJVideoPlayerConfigurations.shared.resources.backImage forState:UIControlStateNormal];
     [_fixedBackButton addTarget:self action:@selector(_fixedBackButtonWasTapped) forControlEvents:UIControlEventTouchUpInside];
+    _fixedBackButton.backgroundColor = [UIColor redColor];
     return _fixedBackButton;
 }
 
@@ -852,8 +965,31 @@
     fullItem.resetsAppearIntervalWhenPerformingItemAction = NO;
     [fullItem addAction:[SJEdgeControlButtonItemAction actionWithTarget:self action:@selector(_fullItemWasTapped)]];
     [self.bottomAdapter addItem:fullItem];
+    
+    _speedBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    [_speedBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [_speedBtn setTitle:@"倍速" forState:UIControlStateNormal];
+    _speedBtn.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.8];
+    _speedBtn.titleLabel.font = [UIFont systemFontOfSize:10];
+    [_speedBtn addTarget:self action:@selector(showSpeedSelectAction:) forControlEvents:UIControlEventTouchUpInside];
+    _speedBtn.layer.cornerRadius = 4;
+    
+    UIView *speedBgView = [[UIView alloc] initWithFrame:CGRectZero];
+    [speedBgView addSubview:_speedBtn];
+    speedBgView.backgroundColor = UIColor.clearColor;
+    speedBgView.bounds = CGRectMake(0, 0, 46, 20);
+    SJEdgeControlButtonItem *speedItem = [SJEdgeControlButtonItem placeholderWithType:SJButtonItemPlaceholderType_49xSpecifiedSize tag:SJEdgeControlLayerBottomItem_Speed];
+    speedItem.customView = speedBgView;
+    speedItem.insets = SJEdgeInsetsMake(20, 10);
 
+    [self.bottomAdapter addItem:speedItem];
+    
     [self.bottomAdapter reload];
+    
+    [_speedBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.left.centerX.centerY.mas_equalTo(0);
+        make.height.mas_equalTo(20);
+    }];
 }
 
 - (void)_addItemsToRightAdapter {
@@ -867,8 +1003,19 @@
     [replayItem addAction:[SJEdgeControlButtonItemAction actionWithTarget:self action:@selector(_replayItemWasTapped)]];
     [self.centerAdapter addItem:replayItem];
     [self.centerAdapter reload];
+    
+    // Hok Add
+    _playBigBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    [_playBigBtn setImage:[SJVideoPlayerResourceLoader imageNamed:@"shipinbofang_icon_bofang_big_Default"] forState:UIControlStateNormal];
+    [_playBigBtn addTarget:self action:@selector(_playItemWasTapped) forControlEvents:UIControlEventTouchUpInside];
+    _playBigBtn.hidden = YES;
+    [self addSubview:_playBigBtn];
+    
+    [_playBigBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.centerX.centerY.mas_equalTo(0);
+        make.width.height.mas_equalTo(42);
+    }];
 }
-
 
 #pragma mark - appear state
 
@@ -1143,6 +1290,11 @@
 }
 
 - (void)_reloadBottomAdapterIfNeeded {
+    if (self.playBigBtn) {
+        BOOL show = !_videoPlayer.isPlaybackFinished && _videoPlayer.isPaused;
+        self.playBigBtn.hidden = !show;
+    }
+    
     if ( sj_view_isDisappeared(_bottomContainerView) ) return;
     
     id<SJVideoPlayerControlLayerResources> sources = SJVideoPlayerConfigurations.shared.resources;
@@ -1479,6 +1631,36 @@
 //    if ( @available(iOS 14.0, *) ) [self _updateContentForPictureInPictureItem];
 //    [self _updateContentForBottomProgressSliderItemIfNeeded];
 //}
+
+#pragma mark - Getter/Setter
+
+- (void)setSpeedBgColor:(UIColor *)speedBgColor {
+    _speedBgColor = speedBgColor;
+    
+    self.speedBtn.backgroundColor = speedBgColor;
+}
+
+- (void)setSpeedBorderColor:(UIColor *)speedBorderColor {
+    _speedBorderColor = speedBorderColor;
+    
+    self.speedBtn.layer.borderColor = speedBorderColor.CGColor;
+    self.speedBtn.layer.borderWidth = 1.0;
+}
+
+- (void)setSpeedStr:(NSString *)speedStr {
+    _speedStr = speedStr;
+    
+    [self.speedBtn setTitle:speedStr forState:UIControlStateNormal];
+    
+    if (self.delegate && [self.delegate respondsToSelector:@selector(switchPlayerRate:)]) {
+        CGFloat rate = [[speedStr stringByReplacingOccurrencesOfString:@"X" withString:@""] floatValue];
+        [self.delegate switchPlayerRate:rate];
+    }
+}
+
+#pragma mark - Super
+
+#pragma mark - NSObject
 
 @end
 

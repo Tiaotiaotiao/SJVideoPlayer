@@ -29,3 +29,6 @@ SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_LIVEText = 30006;
 SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Definition = 30007;
 
 SJEdgeControlButtonItemTag const SJEdgeControlLayerCenterItem_Replay = 40000;
+
+
+SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Speed = 50000;

@@ -119,11 +119,37 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) BOOL needsFitOnScreenFirst;
 
 @property (nonatomic, weak, nullable) id<SJEdgeControlLayerDelegate> delegate;
+
+/// 是否隐藏 全屏按钮
+@property (nonatomic, getter=isHideBottomPlay, assign,) BOOL hideBottomPlay;
+
+/// 是否隐藏 全屏按钮
+@property (nonatomic, getter=isHideFull, assign,) BOOL hideFull;
+
+@property (nonatomic, getter=isShowClose, assign) BOOL showClose;
+@property (nonatomic, nullable, copy) void(^closeBlock)(void);
+
+@property (nonatomic, strong) UIColor *speedBgColor;
+@property (nonatomic, strong) UIColor *speedBorderColor;
+@property (nonatomic, nullable, copy) NSString *speedStr;
+
+@property (nonatomic, nullable, copy) void(^speedClickBlock)(NSString *speed);
+
+- (void)showHokUI;
+- (void)hideBottom;
+
 @end
 
 
 @protocol SJEdgeControlLayerDelegate <NSObject>
 - (void)backItemWasTappedForControlLayer:(id<SJControlLayer>)controlLayer;
+
+@optional
+
+- (void)keepControllerLayer:(BOOL)keeAppear;
+
+- (void)switchPlayerRate:(CGFloat)rate;
+
 @end
 
 

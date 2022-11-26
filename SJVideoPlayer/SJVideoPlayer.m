@@ -16,6 +16,8 @@
 #import <SJBaseVideoPlayer/SJReachability.h>
 #import <SJBaseVideoPlayer/UIView+SJBaseVideoPlayerExtended.h>
 #import <SJBaseVideoPlayer/NSTimer+SJAssetAdd.h>
+#import <SJBaseVideoPlayer/SJMediaPlaybackController.h>
+#import <SJBaseVideoPlayer/SJTextPopupController.h>
 #else
 #import "SJReachability.h"
 #import "SJBaseVideoPlayer.h"
@@ -220,11 +222,33 @@ NS_ASSUME_NONNULL_BEGIN
     [self _backButtonWasTapped];
 }
 
+- (void)keepControllerLayer:(BOOL)keeAppear {
+    if (keeAppear) {
+        [self.controlLayerAppearManager keepAppearState];
+    } else {
+        [self.controlLayerAppearManager needDisappear];
+    }
+}
+
+- (void)switchPlayerRate:(CGFloat)rate {
+    self.rate = rate;
+}
+
 ///
 /// 点击了控制层上的刷新按钮
 ///
 - (void)reloadItemWasTappedForControlLayer:(id<SJControlLayer>)controlLayer {
+    if (SJReachability.shared.networkStatus == SJNetworkStatus_NotReachable) {
+        [self.textPopupController show:[NSAttributedString sj_UIKitText:^(id<SJUIKitTextMakerProtocol>  _Nonnull make) {
+            make.append(SJVideoPlayerConfigurations.shared.localizedStrings.unstableNetworkPrompt);
+            make.textColor(UIColor.whiteColor);
+        }] duration:3];
+        
+        return;
+    }
+    
     [self refresh];
+    
     [self.switcher switchControlLayerForIdentifier:SJControlLayer_Edge];
 }
 
@@ -465,11 +489,14 @@ NS_ASSUME_NONNULL_BEGIN
         }
     }
     else if ( _sj_timeoutTimer != nil ) {
-        [_sj_timeoutTimer invalidate];
-        _sj_timeoutTimer = nil;
-        self.sj_isTimeout = NO;
+        [self _stopTimeoutTimer];
     }
+}
 
+- (void)_stopTimeoutTimer {
+    [_sj_timeoutTimer invalidate];
+    _sj_timeoutTimer = nil;
+    self.sj_isTimeout = NO;
 }
 
 - (void)_switchControlLayerIfNeeded {
@@ -517,12 +544,20 @@ NS_ASSUME_NONNULL_BEGIN
         if ( !self ) return;
         if ( r.networkStatus == SJNetworkStatus_NotReachable ) {
             [self _resumeOrStopTimeoutTimer];
-        }
-        else if ( self.switcher.currentIdentifier == SJControlLayer_NotReachableAndPlaybackStalled ) {
+        } else {
+//        else if ( self.switcher.currentIdentifier == SJControlLayer_NotReachableAndPlaybackStalled ) {
 #ifdef DEBUG
             NSLog(@"%d \t %s \t 网络恢复, 将刷新资源, 使播放器恢复播放!", (int)__LINE__, __func__);
 #endif
-            [self refresh];
+            //[self refresh];
+            [self _stopTimeoutTimer];
+
+            [self.switcher switchControlLayerForIdentifier:SJControlLayer_Edge];
+            
+            if (self.playbackController.timeControlStatus == SJPlaybackTimeControlStatusPaused) {
+                SJMediaPlaybackController *playbackController = (SJMediaPlaybackController *)self.playbackController;
+                playbackController.isPlaybackFinished ? [playbackController replay] : [playbackController play];
+            }
         }
     };
 }
