@@ -23,6 +23,7 @@ extern SJEdgeControlButtonItemTag const SJEdgeControlLayerLeftItem_Lock;        
 
 // right adapter items
 extern SJEdgeControlButtonItemTag const SJEdgeControlLayerRightItem_Clips;         // GIF/导出/截屏
+extern SJEdgeControlButtonItemTag const SJEdgeControlLayerRightItem_Full;           // 全屏
 
 // bottom adapter items
 extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Play;          // 播放按钮
@@ -33,10 +34,12 @@ extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Progress;  
 extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Full;          // 全屏按钮
 extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_LIVEText;      // 实时直播
 extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Definition;    // 清晰度
+extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Next;          // 下一集
 
 // center adapter items
 extern SJEdgeControlButtonItemTag const SJEdgeControlLayerCenterItem_Replay;        // 重播按钮
 
 extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Speed;        // 倍速
+extern SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_SelVideo;        // 倍速
 
 NS_ASSUME_NONNULL_END

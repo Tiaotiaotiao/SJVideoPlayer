@@ -54,9 +54,12 @@ NSNotificationName const SJVideoPlayerConfigurationsDidUpdateNotification = @"SJ
 @property (nonatomic, strong, nullable) UIImage *lockImage;
 @property (nonatomic, strong, nullable) UIImage *unlockImage;
 
+@property (nonatomic, strong, nullable) UIImage *hokFullImage;
+
 // bottom adapter items
 @property (nonatomic, strong, nullable) UIImage *pauseImage;
 @property (nonatomic, strong, nullable) UIImage *playImage;
+@property (nonatomic, strong, nullable) UIImage *nextImage;
 
 @property (nonatomic, strong, nullable) UIFont  *timeLabelFont;
 @property (nonatomic, strong, nullable) UIColor *timeLabelColor;
@@ -157,8 +160,11 @@ NSNotificationName const SJVideoPlayerConfigurationsDidUpdateNotification = @"SJ
     _lockImage = [SJVideoPlayerResourceLoader imageNamed:@"sj_video_player_lock"];
     _unlockImage = [SJVideoPlayerResourceLoader imageNamed:@"sj_video_player_unlock"];
 
+    _hokFullImage = [SJVideoPlayerResourceLoader imageNamed:@"hok_full_screen"];
+
     _pauseImage = [SJVideoPlayerResourceLoader imageNamed:@"sj_video_player_pause"];
     _playImage = [SJVideoPlayerResourceLoader imageNamed:@"sj_video_player_play"];
+    _nextImage = [SJVideoPlayerResourceLoader imageNamed:@"hok_full_screen_next"];
     _timeLabelFont = [UIFont systemFontOfSize:11];
     _timeLabelColor = UIColor.whiteColor;
     

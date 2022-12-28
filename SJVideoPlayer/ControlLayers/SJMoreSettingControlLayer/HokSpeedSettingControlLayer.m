@@ -50,7 +50,7 @@
     self.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.8];
     self.layer.cornerRadius = 4;
     self.layer.masksToBounds = YES;
-
+    
     [self addSubview:self.tb];
     
     [self initSubviewFrame];

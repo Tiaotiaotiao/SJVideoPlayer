@@ -18,6 +18,7 @@ SJEdgeControlButtonItemTag const SJEdgeControlLayerTopItem_More = 10004;
 SJEdgeControlButtonItemTag const SJEdgeControlLayerLeftItem_Lock = 20000;
 
 SJEdgeControlButtonItemTag const SJEdgeControlLayerRightItem_Clips = 20001;
+SJEdgeControlButtonItemTag const SJEdgeControlLayerRightItem_Full = 20002;
 
 SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Play = 30000;
 SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_CurrentTime = 30001;
@@ -27,8 +28,10 @@ SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Progress = 30004;
 SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Full = 30005;
 SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_LIVEText = 30006;
 SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Definition = 30007;
+SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Next = 30008;
 
 SJEdgeControlButtonItemTag const SJEdgeControlLayerCenterItem_Replay = 40000;
 
 
 SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_Speed = 50000;
+SJEdgeControlButtonItemTag const SJEdgeControlLayerBottomItem_SelVideo = 50001;

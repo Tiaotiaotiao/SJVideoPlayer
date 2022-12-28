@@ -84,9 +84,12 @@ UIKIT_EXTERN NSNotificationName const SJVideoPlayerConfigurationsDidUpdateNotifi
 @property (nonatomic, strong, nullable) UIImage *lockImage;
 @property (nonatomic, strong, nullable) UIImage *unlockImage;
 
+@property (nonatomic, strong, nullable) UIImage *hokFullImage;
+
 // bottom adapter items
 @property (nonatomic, strong, nullable) UIImage *pauseImage;
 @property (nonatomic, strong, nullable) UIImage *playImage;
+@property (nonatomic, strong, nullable) UIImage *nextImage;
 
 @property (nonatomic, strong, nullable) UIFont  *timeLabelFont;
 @property (nonatomic, strong, nullable) UIColor *timeLabelColor;

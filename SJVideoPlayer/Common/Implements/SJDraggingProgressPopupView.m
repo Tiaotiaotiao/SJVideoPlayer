@@ -104,33 +104,32 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)_setupViews {
     [self addSubview:self.contentView];
-    [_contentView addSubview:self.progressSlider];
-    [_contentView addSubview:self.directionImageView];
+    //[_contentView addSubview:self.progressSlider];
+    //[_contentView addSubview:self.directionImageView];
     [_contentView addSubview:self.dragTimeLabel];
     [_contentView addSubview:self.separatorLabel];
     [_contentView addSubview:self.durationLabel];
-    [_contentView addSubview:self.previewImageView];
+    //[_contentView addSubview:self.previewImageView];
     
     [self _resetLayout];
-
+    
     [_dragTimeLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.right.equalTo(self->_separatorLabel.mas_left);
+        make.left.offset(10);
         make.centerY.equalTo(self->_separatorLabel);
-        make.left.offset(0);
     }];
-
+    
     [_durationLabel mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self->_separatorLabel.mas_right);
+        make.left.mas_equalTo(self->_separatorLabel.mas_right);
         make.centerY.equalTo(self->_separatorLabel);
-        make.right.offset(0);
+        make.right.offset(-10);
     }];
 }
 
 - (UIView *)contentView {
     if ( _contentView == nil ) {
         _contentView = [UIView new];
-        _contentView.layer.cornerRadius = 8;
-        _contentView.backgroundColor = [UIColor colorWithWhite:0 alpha:0.8];
+        _contentView.layer.cornerRadius = 4;
+        _contentView.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.7];
     }
     return _contentView;
 }
@@ -196,15 +195,33 @@ NS_ASSUME_NONNULL_BEGIN
 #pragma mark -
 
 - (void)_resetLayout {
-    switch ( _style ) {
-        case SJDraggingProgressPopupViewStyleNormal:
-        case SJDraggingProgressPopupViewStyleFitOnScreen:
-            [self _resetLayout_normalStyle];
-            break;
-        case SJDraggingProgressPopupViewStyleFullscreen:
-            [self _resetLayout_fullscreenStyle];
-            break;
-    }
+    [self _resetLayout_hok];
+    
+//    switch ( _style ) {
+//        case SJDraggingProgressPopupViewStyleNormal:
+//        case SJDraggingProgressPopupViewStyleFitOnScreen:
+//            [self _resetLayout_normalStyle];
+//            break;
+//        case SJDraggingProgressPopupViewStyleFullscreen:
+//            [self _resetLayout_fullscreenStyle];
+//            break;
+//    }
+}
+
+
+- (void)_resetLayout_hok {
+    [_contentView mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(0);
+        CGFloat width = 123;
+        CGFloat height = 32;
+        //make.width.mas_greaterThanOrEqualTo(width);
+        make.height.mas_equalTo(height);
+    }];
+    
+    [_separatorLabel mas_remakeConstraints:^(MASConstraintMaker *make) {
+        make.left.mas_equalTo(self->_dragTimeLabel.mas_right);
+        make.centerY.mas_equalTo(0);
+    }];
 }
 
 - (void)_resetLayout_normalStyle {

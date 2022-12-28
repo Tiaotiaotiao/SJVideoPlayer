@@ -42,6 +42,7 @@
 #import "SJVideoPlayerResourceLoader.h"
 
 #import "HokSpeedSettingControlLayer.h"
+#import "HokSpeedSettingHorizontalScreenControlLayer.h"
 
 #pragma mark - Top
 
@@ -64,8 +65,13 @@
 // Hok Add
 @property (nonatomic, strong) UIButton *speedBtn;
 @property (nonatomic, weak) HokSpeedSettingControlLayer *speedSettingLayer;
+@property (nonatomic, weak) HokSpeedSettingHorizontalScreenControlLayer *hsSpeedSettingLayer;
+
+@property (nonatomic, strong) UIButton *selVideoBtn;
 
 @property (nonatomic, strong) UIButton *playBigBtn;
+
+@property (nonatomic, strong) UIButton *fullScreenBtn;
 
 @property (nonatomic, strong) UIButton *closeBtn;
 
@@ -81,9 +87,12 @@
     if ( !self ) return nil;
     _bottomProgressIndicatorHeight = 1;
     _automaticallyPerformRotationOrFitOnScreen = YES;
+    self.nextEnable = YES;
+    self.hideHSFull = YES;
     [self _setupView];
     self.autoAdjustTopSpacing = YES;
     self.hiddenBottomProgressIndicator = YES;
+    
     if (@available(iOS 14.0, *)) {
         self.automaticallyShowsPictureInPictureItem = YES;
     }
@@ -145,8 +154,18 @@
     _videoPlayer.isPaused ? [self.videoPlayer play] : [self.videoPlayer pauseForUser];
 }
 
+- (void)_nextItemWasTapped {
+    if (!self.isNextEnable) {
+        return;
+    }
+    
+    if (self.nextClickBlock) {
+        self.nextClickBlock();
+    }
+}
+
 - (void)_fullItemWasTapped {
-    if ( _videoPlayer.onlyFitOnScreen || _autousesFitOnScreen ) {
+    if (!self.forceHS && (_videoPlayer.onlyFitOnScreen || _autousesFitOnScreen)) {
         [_videoPlayer setFitOnScreen:!_videoPlayer.isFitOnScreen];
         return;
     }
@@ -157,6 +176,10 @@
     }
     
     [_videoPlayer rotate];
+    
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self checkShowHSGGuideView];
+    });
 }
 
 - (void)_replayItemWasTapped {
@@ -178,6 +201,35 @@
 }
 
 - (void)showSpeedSelectAction:(UIButton *)button {
+    BOOL isFullscreen = _videoPlayer.isFullscreen;
+    
+    if (isFullscreen) {
+        HokSpeedSettingHorizontalScreenControlLayer *view = [[HokSpeedSettingHorizontalScreenControlLayer alloc] initWithFrame:CGRectZero];
+        view.selSpeed = self.speedBtn.titleLabel.text;
+        self.hsSpeedSettingLayer = view;
+        
+        CGRect rect = [button convertRect:button.bounds toView:self];
+//        view.frame = CGRectMake(rect.origin.x, rect.origin.y - HokRate(4), HokRate(46), 0);
+        [view show:nil];
+        
+        __weak typeof(self) weakSelf = self;
+        view.selBlock = ^(NSString * _Nonnull speed) {
+            weakSelf.speedStr = speed;
+        };
+        
+        view.hideBlock = ^ {
+//            if (weakSelf.delegate && [self.delegate respondsToSelector:@selector(keepControllerLayer:)]) {
+//                [weakSelf.delegate keepControllerLayer:YES];
+//            }
+        };
+        
+        if (self.delegate && [self.delegate respondsToSelector:@selector(keepControllerLayer:)]) {
+            [self.delegate keepControllerLayer:NO];
+        }
+        
+        return;
+    }
+    
     if (self.speedClickBlock) {
         if (self.delegate && [self.delegate respondsToSelector:@selector(keepControllerLayer:)]) {
             [self.delegate keepControllerLayer:YES];
@@ -217,10 +269,55 @@
     }
 }
 
+- (void)setNextEnable:(BOOL)nextEnable {
+    _nextEnable = nextEnable;
+    
+    SJEdgeControlButtonItem *nextItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_Next];
+    if (!nextItem) {
+        return;
+    }
+    
+    nextItem.alpha = !nextEnable ? 0.5 : 1.0;
+}
+
+- (void)selVideoAction:(UIButton *)button {
+    if (self.selVideoBlock) {
+        self.selVideoBlock();
+    };
+}
+
 - (void)closeClickAction:(UIButton *)button {
     if (self.closeBlock) {
         self.closeBlock();
     }
+}
+
+- (void)checkShowHSGGuideView {
+    NSString *key = @"HokDesDtHSGuideShowKey";
+    
+    if ([[NSUserDefaults standardUserDefaults] boolForKey:key]) {
+        return;
+    }
+    
+    [[NSUserDefaults standardUserDefaults] setObject:@(YES) forKey:key];
+    [[NSUserDefaults standardUserDefaults] synchronize];
+    
+    UIImageView *guideImgView = [[UIImageView alloc] initWithFrame:CGRectZero];
+    guideImgView.image = self.guideImage;
+    guideImgView.userInteractionEnabled = YES;
+    
+    UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(guideImgViewTapGestureAction:)];
+    [guideImgView addGestureRecognizer:tap];
+    
+    [self addSubview:guideImgView];
+    
+    [guideImgView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(0);
+    }];
+}
+
+- (void)guideImgViewTapGestureAction:(UITapGestureRecognizer *)recognizer {
+    [recognizer.view removeFromSuperview];
 }
 
 #pragma mark - slider delegate methods
@@ -970,7 +1067,7 @@
     [_speedBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
     [_speedBtn setTitle:@"倍速" forState:UIControlStateNormal];
     _speedBtn.backgroundColor = [[UIColor blackColor] colorWithAlphaComponent:0.8];
-    _speedBtn.titleLabel.font = [UIFont systemFontOfSize:10];
+    _speedBtn.titleLabel.font = [UIFont fontWithName:@"PingFangSC-Regular" size:HokRate(10)];
     [_speedBtn addTarget:self action:@selector(showSpeedSelectAction:) forControlEvents:UIControlEventTouchUpInside];
     _speedBtn.layer.cornerRadius = 4;
     
@@ -980,9 +1077,15 @@
     speedBgView.bounds = CGRectMake(0, 0, 46, 20);
     SJEdgeControlButtonItem *speedItem = [SJEdgeControlButtonItem placeholderWithType:SJButtonItemPlaceholderType_49xSpecifiedSize tag:SJEdgeControlLayerBottomItem_Speed];
     speedItem.customView = speedBgView;
-    speedItem.insets = SJEdgeInsetsMake(20, 10);
+    speedItem.insets = SJEdgeInsetsMake(HokRate(20), HokRate(10));
 
     [self.bottomAdapter addItem:speedItem];
+    
+    _selVideoBtn = [UIButton buttonWithType:UIButtonTypeCustom];
+    [_selVideoBtn setTitleColor:[UIColor whiteColor] forState:UIControlStateNormal];
+    [_selVideoBtn setTitle:@"选择视频" forState:UIControlStateNormal];
+    _selVideoBtn.titleLabel.font = [UIFont fontWithName:@"PingFangSC-Regular" size:HokRate(14)];
+    [_selVideoBtn addTarget:self action:@selector(selVideoAction:) forControlEvents:UIControlEventTouchUpInside];
     
     [self.bottomAdapter reload];
     
@@ -993,7 +1096,12 @@
 }
 
 - (void)_addItemsToRightAdapter {
+    SJEdgeControlButtonItem *hokFullItem = [SJEdgeControlButtonItem placeholderWithType:SJButtonItemPlaceholderType_49x49 tag:SJEdgeControlLayerRightItem_Full];
     
+    [hokFullItem addAction:[SJEdgeControlButtonItemAction actionWithTarget:self action:@selector(_fullItemWasTapped)]];
+    [self.rightAdapter addItem:hokFullItem];
+    
+    [self.rightAdapter reload];
 }
 
 - (void)_addItemsToCenterAdapter {
@@ -1308,6 +1416,34 @@
         }
     }
     
+    // play next
+    {
+        BOOL isFullscreen = _videoPlayer.isFullscreen;
+        
+        SJEdgeControlButtonItem *nextItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_Next];
+        if (isFullscreen) {
+            if (!nextItem) {
+                nextItem = [SJEdgeControlButtonItem placeholderWithType:SJButtonItemPlaceholderType_49x49 tag:SJEdgeControlLayerBottomItem_Next];
+                nextItem.insets = SJEdgeInsetsMake(-HokRate(10), 0);
+                [nextItem addAction:[SJEdgeControlButtonItemAction actionWithTarget:self action:@selector(_nextItemWasTapped)]];
+                
+                id<SJVideoPlayerControlLayerResources> sources = SJVideoPlayerConfigurations.shared.resources;
+                nextItem.image = sources.nextImage;
+                
+                nextItem.alpha = !self.isNextEnable ? 0.5 : 1.0;
+                
+                [self.bottomAdapter insertItem:nextItem atIndex:1];
+                [self.bottomAdapter reload];
+             }
+        } else {
+            if (nextItem) {
+                [self.bottomAdapter removeItemForTag:SJEdgeControlLayerBottomItem_Next];
+                [self.bottomAdapter reload];
+            }
+        }
+    }
+    
+    
     // progress item
     {
         SJEdgeControlButtonItem *progressItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_Progress];
@@ -1328,6 +1464,26 @@
         }
     }
     
+    // spped item
+    {
+        SJEdgeControlButtonItem *speedItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_Speed];
+        if (speedItem && !speedItem.hidden) {
+            BOOL isFullscreen = _videoPlayer.isFullscreen;
+            if (isFullscreen) {
+                speedItem.insets = SJEdgeInsetsMake(HokRate(10), HokRate(10));
+                self.speedBtn.titleLabel.font = [UIFont fontWithName:@"PingFangSC-Regular" size:HokRate(14)];
+                self.speedBtn.layer.borderColor = nil;
+                self.speedBtn.layer.borderWidth = 0;
+            } else {
+                speedItem.insets = SJEdgeInsetsMake(HokRate(20), HokRate(10));
+                self.speedBtn.titleLabel.font = [UIFont fontWithName:@"PingFangSC-Regular" size:HokRate(10)];
+                self.speedBtn.layer.borderColor = self.speedBorderColor.CGColor;
+                self.speedBtn.layer.borderWidth = 1;
+            }
+        }
+    }
+    
+    
     // full item
     {
         SJEdgeControlButtonItem *fullItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_Full];
@@ -1335,6 +1491,38 @@
             BOOL isFullscreen = _videoPlayer.isFullscreen;
             BOOL isFitOnScreen = _videoPlayer.isFitOnScreen;
             fullItem.image = (isFullscreen || isFitOnScreen) ? sources.smallScreenImage : sources.fullscreenImage;
+        }
+    }
+    
+    // sel video item
+    {
+        BOOL isFullscreen = _videoPlayer.isFullscreen;
+
+        SJEdgeControlButtonItem *selVideoItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_SelVideo];
+        if (isFullscreen) {
+            if (!selVideoItem) {
+                UIView *selVideoBgView = [[UIView alloc] initWithFrame:CGRectZero];
+                [selVideoBgView addSubview:_selVideoBtn];
+                selVideoBgView.backgroundColor = UIColor.clearColor;
+                selVideoBgView.bounds = CGRectMake(0, 0, HokRate(60), HokRate(20));
+                SJEdgeControlButtonItem *selVideoItem = [SJEdgeControlButtonItem placeholderWithType:SJButtonItemPlaceholderType_49xSpecifiedSize tag:SJEdgeControlLayerBottomItem_SelVideo];
+                selVideoItem.customView = selVideoBgView;
+                selVideoItem.insets = SJEdgeInsetsMake(0, HokRate(8 ));
+                
+                [_selVideoBtn mas_makeConstraints:^(MASConstraintMaker *make) {
+                    make.top.left.centerX.centerY.mas_equalTo(0);
+                }];
+                
+                //selVideoItem.hidden = YES;
+                [self.bottomAdapter addItem:selVideoItem];
+
+                [self.bottomAdapter reload];
+             }
+        } else {
+            if (selVideoItem) {
+                [self.bottomAdapter removeItemForTag:SJEdgeControlLayerBottomItem_SelVideo];
+                [self.bottomAdapter reload];
+            }
         }
     }
     
@@ -1358,8 +1546,26 @@
 }
 
 - (void)_reloadRightAdapterIfNeeded {
-//    if ( sj_view_isDisappeared(_rightContainerView) ) return;
+    if (sj_view_isDisappeared(_rightContainerView)) return;
     
+    SJEdgeControlButtonItem *hokFullItem = [self.rightAdapter itemForTag:SJEdgeControlLayerRightItem_Full];
+    if (!hokFullItem) {
+        return;
+    }
+    
+    BOOL isHide = self.isHideHSFull;
+    
+    if (isHide) {
+        [self.rightAdapter removeItemForTag:SJEdgeControlLayerRightItem_Full];
+    } else {
+        BOOL isFullscreen = _videoPlayer.isFullscreen;
+        hokFullItem.innerHidden = isFullscreen;
+        
+        id<SJVideoPlayerControlLayerResources> sources = SJVideoPlayerConfigurations.shared.resources;
+        hokFullItem.image = sources.hokFullImage;
+    }
+  
+    [_rightAdapter reload];
 }
 
 - (void)_reloadCenterAdapterIfNeeded {
@@ -1583,6 +1789,7 @@
     [self _updateForDraggingProgressPopupView];
     [_draggingProgressPopupView mas_makeConstraints:^(MASConstraintMaker *make) {
         make.center.offset(0);
+//        make.width.mas_greaterThanOrEqualTo(123);
     }];
     
     sj_view_initializes(_draggingProgressPopupView);
