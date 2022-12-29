@@ -1411,8 +1411,13 @@
     // play item
     {
         SJEdgeControlButtonItem *playItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_Play];
-        if ( playItem != nil && playItem.hidden == NO ) {
-            playItem.image = _videoPlayer.isPaused ? sources.playImage : sources.pauseImage;
+        if ( playItem != nil) {
+            BOOL isFullscreen = _videoPlayer.isFullscreen;
+            if (isFullscreen) {
+                playItem.image = _videoPlayer.isPaused ? sources.hsPlayImage : sources.hsPauseImage;
+            } else {
+                playItem.image = _videoPlayer.isPaused ? sources.playImage : sources.pauseImage;
+            }
         }
     }
     
@@ -1573,7 +1578,16 @@
     
     SJEdgeControlButtonItem *replayItem = [self.centerAdapter itemForTag:SJEdgeControlLayerCenterItem_Replay];
     if ( replayItem != nil ) {
-        replayItem.innerHidden = !_videoPlayer.isPlaybackFinished;
+        BOOL isFullscreen = _videoPlayer.isFullscreen;
+        BOOL isFinish = _videoPlayer.isPlaybackFinished;
+        BOOL canAutoplay = isFullscreen && isFinish && self.isNextEnable;
+        if (canAutoplay) {
+            if (self.nextClickBlock) {
+                self.nextClickBlock();
+            }
+        }
+        
+        replayItem.innerHidden = !isFinish || canAutoplay;
         if ( replayItem.hidden == NO && replayItem.title == nil ) {
             id<SJVideoPlayerControlLayerResources> resources = SJVideoPlayerConfigurations.shared.resources;
             id<SJVideoPlayerLocalizedStrings> strings = SJVideoPlayerConfigurations.shared.localizedStrings;

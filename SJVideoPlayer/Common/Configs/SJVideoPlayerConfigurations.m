@@ -59,6 +59,8 @@ NSNotificationName const SJVideoPlayerConfigurationsDidUpdateNotification = @"SJ
 // bottom adapter items
 @property (nonatomic, strong, nullable) UIImage *pauseImage;
 @property (nonatomic, strong, nullable) UIImage *playImage;
+@property (nonatomic, strong, nullable) UIImage *hsPauseImage;
+@property (nonatomic, strong, nullable) UIImage *hsPlayImage;
 @property (nonatomic, strong, nullable) UIImage *nextImage;
 
 @property (nonatomic, strong, nullable) UIFont  *timeLabelFont;
