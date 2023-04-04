@@ -149,6 +149,7 @@ NS_ASSUME_NONNULL_BEGIN
 
 - (void)showHokUI;
 - (void)hideBottom;
+- (void)hideSpeedView;
 
 @end
 

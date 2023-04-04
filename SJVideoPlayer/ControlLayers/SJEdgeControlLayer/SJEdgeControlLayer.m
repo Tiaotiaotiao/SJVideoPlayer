@@ -246,9 +246,12 @@
     }
     
     HokSpeedSettingControlLayer *view = [[HokSpeedSettingControlLayer alloc] initWithFrame:CGRectZero];
-    view.selSpeed = self.speedBtn.titleLabel.text;
+    NSString *speedStr = self.speedBtn.titleLabel.text;
+    if ([speedStr containsString:@"X"]) {
+        view.selSpeed = speedStr;
+    }
     self.speedSettingLayer = view;
-
+    
     CGRect rect = [button convertRect:button.bounds toView:self];
     view.frame = CGRectMake(rect.origin.x, rect.origin.y - HokRate(4), HokRate(46), 0);
     [view show:self];
@@ -813,6 +816,10 @@
     if (self.delegate && [self.delegate respondsToSelector:@selector(keepControllerLayer:)]) {
         [self.delegate keepControllerLayer:NO];
     }
+}
+
+- (void)hideSpeedView {
+    [_speedSettingLayer hide];
 }
 
 #pragma mark - setup view
@@ -1873,8 +1880,12 @@
     
     [self.speedBtn setTitle:speedStr forState:UIControlStateNormal];
     
+    CGFloat rate = [[speedStr stringByReplacingOccurrencesOfString:@"X" withString:@""] floatValue];
+    if (self.videoPlayer.rate == rate) {
+        return;
+    }
+    
     if (self.delegate && [self.delegate respondsToSelector:@selector(switchPlayerRate:)]) {
-        CGFloat rate = [[speedStr stringByReplacingOccurrencesOfString:@"X" withString:@""] floatValue];
         [self.delegate switchPlayerRate:rate];
     }
 }
