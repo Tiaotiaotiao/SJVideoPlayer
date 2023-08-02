@@ -550,6 +550,12 @@ NS_ASSUME_NONNULL_BEGIN
             NSLog(@"%d \t %s \t 网络恢复, 将刷新资源, 使播放器恢复播放!", (int)__LINE__, __func__);
 #endif
             //[self refresh];
+            
+            // Add by tiaotiao
+            if (self.isLimitNetworkChangeAutoPlay && self.isUserPaused) {
+                return;
+            }
+            
             [self _stopTimeoutTimer];
 
             [self.switcher switchControlLayerForIdentifier:SJControlLayer_Edge];
