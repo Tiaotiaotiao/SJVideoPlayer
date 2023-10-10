@@ -134,6 +134,8 @@ NS_ASSUME_NONNULL_BEGIN
 /// 点击全屏的时候 是否强制横屏
 @property (nonatomic, getter=isForceHS, assign) BOOL forceHS;
 
+@property (nonatomic, getter=isHideHSSelVideo, assign) BOOL hideHSSelVideo;
+
 @property (nonatomic, getter=isShowClose, assign) BOOL showClose;
 @property (nonatomic, nullable, copy) void(^closeBlock)(void);
 

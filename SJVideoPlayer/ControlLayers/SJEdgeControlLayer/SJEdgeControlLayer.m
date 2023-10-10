@@ -1511,7 +1511,7 @@
         BOOL isFullscreen = _videoPlayer.isFullscreen;
 
         SJEdgeControlButtonItem *selVideoItem = [self.bottomAdapter itemForTag:SJEdgeControlLayerBottomItem_SelVideo];
-        if (isFullscreen) {
+        if (isFullscreen && !self.isHideHSSelVideo) {
             if (!selVideoItem) {
                 UIView *selVideoBgView = [[UIView alloc] initWithFrame:CGRectZero];
                 [selVideoBgView addSubview:_selVideoBtn];
@@ -1519,7 +1519,7 @@
                 selVideoBgView.bounds = CGRectMake(0, 0, HokRate(60), HokRate(20));
                 SJEdgeControlButtonItem *selVideoItem = [SJEdgeControlButtonItem placeholderWithType:SJButtonItemPlaceholderType_49xSpecifiedSize tag:SJEdgeControlLayerBottomItem_SelVideo];
                 selVideoItem.customView = selVideoBgView;
-                selVideoItem.insets = SJEdgeInsetsMake(0, HokRate(8 ));
+                selVideoItem.insets = SJEdgeInsetsMake(0, HokRate(8));
                 
                 [_selVideoBtn mas_makeConstraints:^(MASConstraintMaker *make) {
                     make.top.left.centerX.centerY.mas_equalTo(0);
